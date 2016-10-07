@@ -40,6 +40,9 @@ public class Options
     @Option( name = "-f", aliases = { "--config" }, usage = "Configuration file to use (default: $HOME/.koji/buildfinder.conf)" )
     private File configFile;
 
+    @Option( name="-p", aliases={"--skip"}, usage="Skip N prefix directories when parsing paths in the ZIPs")
+    private int skipParts;
+
     @Argument( multiValued = true, metaVar = "ZIP_FILES", usage = "Zip files to process" )
     private List<String> files;
 
@@ -176,5 +179,15 @@ public class Options
     public void setWriteConfig( boolean writeConfig )
     {
         this.writeConfig = writeConfig;
+    }
+
+    public int getSkipParts()
+    {
+        return skipParts;
+    }
+
+    public void setSkipParts( int skipParts )
+    {
+        this.skipParts = skipParts;
     }
 }

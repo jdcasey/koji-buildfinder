@@ -128,7 +128,7 @@ public class Main
                 {
                     try
                     {
-                        Set<String> missing = buildFinder.findMissingBuilds( in );
+                        Set<String> missing = buildFinder.findMissingBuilds( in, opts.getSkipParts() );
                         if ( missing != null && !missing.isEmpty() )
                         {
                             logger.info( "Adding {} missing builds from: {}", missing.size(), in );
