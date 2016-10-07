@@ -27,3 +27,4 @@ After completing configuration, you can run with something like this:
     $ java -jar koji-buildfinder-1.0-SNAPSHOT.jar -p 1 /path/to/my-artifacts.zip
 
 In this execution, Buildfinder will read through the `my-artifacts.zip` file, skipping the root directory of each path when parsing for Maven GAVTC. It will try to match each file entry against a build in Koji.
+
