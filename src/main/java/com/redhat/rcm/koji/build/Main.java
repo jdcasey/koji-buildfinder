@@ -6,7 +6,6 @@ import org.apache.commons.io.IOUtils;
 import org.commonjava.rwx.binding.error.BindException;
 import org.commonjava.util.jhttpc.auth.MemoryPasswordManager;
 import org.commonjava.util.jhttpc.auth.PasswordManager;
-import org.commonjava.util.jhttpc.auth.PasswordType;
 import org.commonjava.web.config.ConfigurationException;
 import org.kohsuke.args4j.CmdLineException;
 import org.slf4j.Logger;
@@ -17,8 +16,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -29,11 +26,12 @@ import static org.commonjava.util.jhttpc.auth.PasswordType.KEY;
 import static org.commonjava.util.jhttpc.auth.PasswordType.PROXY;
 
 /**
- * Created by jdcasey on 10/7/16.
+ * Initialize Koji client, then orchestrate process of matching files contained in specified zip archives to Koji builds.
  */
 public class Main
 {
-    private static final String LINE= "----------------------------------------------------------------------------------------";
+    private static final String LINE =
+            "----------------------------------------------------------------------------------------";
 
     private static final java.lang.String NO_EXIT = "no-exit";
 
@@ -51,8 +49,8 @@ public class Main
 
     public static void main( String[] args )
     {
-        String noExit= System.getProperty( NO_EXIT );
-        boolean exit= noExit == null || !Boolean.parseBoolean( noExit );
+        String noExit = System.getProperty( NO_EXIT );
+        boolean exit = noExit == null || !Boolean.parseBoolean( noExit );
         Integer result = null;
 
         Options opts = new Options();
@@ -96,13 +94,13 @@ public class Main
 
     private Integer result;
 
-    public Main( Options opts )
+    Main( Options opts )
     {
 
         this.opts = opts;
     }
 
-    public Integer run()
+    Integer run()
     {
         Logger logger = LoggerFactory.getLogger( getClass() );
         if ( !configure() )
@@ -183,7 +181,7 @@ public class Main
         }
     }
 
-    public void shutdown()
+    void shutdown()
     {
         if ( client != null )
         {
@@ -196,19 +194,20 @@ public class Main
         }
     }
 
-    public void report()
+    void report()
             throws IOException
     {
         reportFile = new File( "buildfinder.out.txt" );
-        try (PrintWriter pw = new PrintWriter( new FileWriter( reportFile ) ) )
+        try (PrintWriter pw = new PrintWriter( new FileWriter( reportFile ) ))
         {
-            allMissing.forEach( (file,missing)-> pw.write( String.format( "%s:\n%s\n  %s\n\n", file, LINE, join( missing, "\n  ") ) ) );
+            allMissing.forEach( ( file, missing ) -> pw.write(
+                    String.format( "%s:\n%s\n  %s\n\n", file, LINE, join( missing, "\n  " ) ) ) );
         }
     }
 
-    public boolean wire()
+    boolean wire()
     {
-        PasswordManager passwordManager= new MemoryPasswordManager();
+        PasswordManager passwordManager = new MemoryPasswordManager();
         passwordManager.bind( config.getKeyPassword(), config.getKojiSiteId(), KEY );
         if ( config.getProxyPassword() != null )
         {
@@ -233,12 +232,12 @@ public class Main
         return result == null;
     }
 
-    public boolean configure()
+    boolean configure()
     {
         Logger logger = LoggerFactory.getLogger( getClass() );
 
         this.config = new Config();
-        File configFile= opts.getConfigFile();
+        File configFile = opts.getConfigFile();
         if ( configFile != null && configFile.exists() )
         {
             try
@@ -255,5 +254,10 @@ public class Main
         }
 
         return result == null;
+    }
+
+    Integer getResult()
+    {
+        return result;
     }
 }

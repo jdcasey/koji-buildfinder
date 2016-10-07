@@ -3,7 +3,6 @@ package com.redhat.rcm.koji.build;
 import com.redhat.red.build.koji.KojiClient;
 import com.redhat.red.build.koji.KojiClientException;
 import com.redhat.red.build.koji.model.xmlrpc.KojiBuildInfo;
-import com.redhat.red.build.koji.model.xmlrpc.KojiSessionInfo;
 import org.commonjava.maven.atlas.ident.ref.ArtifactRef;
 import org.commonjava.maven.atlas.ident.util.ArtifactPathInfo;
 import org.slf4j.Logger;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,88 +18,105 @@ import java.util.zip.ZipFile;
 import static org.apache.commons.lang.StringUtils.join;
 
 /**
- * Created by jdcasey on 10/7/16.
+ * Iterate through file entries in a zip archive. For each that doesn't end in .md5 or .sha1, and that parses to a
+ * Maven artifact reference (GAVTC), search for a Koji build that lists the artifact in its output.
  */
-public class BuildFinder
+class BuildFinder
 {
     private KojiClient client;
 
-    private Set<String> found = new HashSet<>();
+    private final Set<String> found = new HashSet<>();
 
-    private Set<String> missing = new HashSet<>();
+    private final Set<String> missing = new HashSet<>();
 
-    public BuildFinder( KojiClient client )
+    BuildFinder( KojiClient client )
     {
         this.client = client;
     }
 
-    public Set<String> findMissingBuilds( File zipFile, int skipParts )
+    Set<String> findMissingBuilds( File zipFile, int skipParts )
             throws IOException, KojiClientException
     {
         ZipFile zf = new ZipFile( zipFile );
         Logger logger = LoggerFactory.getLogger( getClass() );
-        Set<String> missingBuilds = new HashSet<>();
+        final Set<String> missingBuilds = new HashSet<>();
 
-        client.withKojiSession( (session)->{
-            zf.stream().parallel().filter((entry)->!entry.isDirectory()).forEach( (entry)->{
-                String[] parts = entry.getName().split( "/" );
-                if ( parts.length > skipParts )
+        client.withKojiSession( ( session ) -> {
+            zf.stream().parallel().filter( ( entry ) -> !entry.isDirectory() ).forEach( ( entry ) -> {
+                String entryName = entry.getName();
+
+                if ( entryName.endsWith( ".md5" ) || entryName.endsWith( ".sha1" ) )
                 {
-                    String[] realParts = new String[parts.length - skipParts];
-                    System.arraycopy( parts, skipParts, realParts,0, realParts.length );
-                    String path = join( realParts, "/" );
-
-                    Boolean foundT_missingF = null;
-                    synchronized ( missing )
+                    logger.debug( "Skipping checksum file: {}", entryName );
+                }
+                else
+                {
+                    String[] parts = entryName.split( "/" );
+                    if ( parts.length > skipParts )
                     {
-                        if ( missing.contains( path ) )
-                        {
-                            foundT_missingF = false;
-                        }
-                    }
+                        String[] realParts = new String[parts.length - skipParts];
+                        System.arraycopy( parts, skipParts, realParts, 0, realParts.length );
+                        String path = join( realParts, "/" );
 
-                    synchronized ( found )
-                    {
-                        if ( found.contains( path ) )
+                        Boolean foundT_missingF = null;
+                        synchronized ( missing )
                         {
-                            foundT_missingF = true;
-                        }
-                    }
-
-                    if ( foundT_missingF == null )
-                    {
-                        ArtifactPathInfo pathInfo = ArtifactPathInfo.parse( path );
-                        if ( pathInfo != null )
-                        {
-                            ArtifactRef aref= pathInfo.getArtifact();
-                            logger.info( "??? {} (trimmed path: '{}', real path: '{}'", aref, path, entry.getName() );
-                            try
+                            if ( missing.contains( path ) )
                             {
-                                List<KojiBuildInfo> builds = client.listBuildsContaining( aref, session );
-                                if ( builds == null || builds.isEmpty() )
-                                {
-                                    synchronized ( missing )
-                                    {
-                                        missing.add( path );
-                                    }
+                                foundT_missingF = false;
+                            }
+                        }
 
-                                    synchronized ( missingBuilds )
+                        synchronized ( found )
+                        {
+                            if ( found.contains( path ) )
+                            {
+                                foundT_missingF = true;
+                            }
+                        }
+
+                        if ( foundT_missingF == null )
+                        {
+                            ArtifactPathInfo pathInfo = ArtifactPathInfo.parse( path );
+                            if ( pathInfo != null )
+                            {
+                                ArtifactRef aref = pathInfo.getArtifact();
+                                logger.info( "??? {} (trimmed path: '{}', real path: '{}'", aref, path, entryName );
+                                try
+                                {
+                                    List<KojiBuildInfo> builds = client.listBuildsContaining( aref, session );
+                                    if ( builds == null || builds.isEmpty() )
                                     {
-                                        missingBuilds.add( entry.getName() );
+                                        synchronized ( missing )
+                                        {
+                                            missing.add( path );
+                                        }
+
+                                        synchronized ( missingBuilds )
+                                        {
+                                            missingBuilds.add( entryName );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        synchronized ( found )
+                                        {
+                                            found.add( path );
+                                        }
                                     }
                                 }
-                            }
-                            catch ( KojiClientException e )
-                            {
-                                logger.error( "Failed to query koji for artifact: " + aref, e );
+                                catch ( KojiClientException e )
+                                {
+                                    logger.error( "Failed to query koji for artifact: " + aref, e );
+                                }
                             }
                         }
-                    }
-                    else if ( !foundT_missingF )
-                    {
-                        synchronized ( missingBuilds )
+                        else if ( !foundT_missingF )
                         {
-                            missingBuilds.add( entry.getName() );
+                            synchronized ( missingBuilds )
+                            {
+                                missingBuilds.add( entryName );
+                            }
                         }
                     }
                 }

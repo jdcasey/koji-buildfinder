@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 /**
- * Created by jdcasey on 10/7/16.
+ * Command-line options, plus methods for parsing args from main(), printing usage, and writing default config file.
  */
 public class Options
 {
@@ -34,13 +33,15 @@ public class Options
     @Option( name = "-h", aliases = { "--help" }, help = true, usage = "Print this help screen and exit" )
     private boolean help;
 
-    @Option( name = "-W", aliases = { "--write-config" }, usage = "Write a new config file to the specified config location and exit. If it already exists, back it up." )
+    @Option( name = "-W", aliases = { "--write-config" },
+             usage = "Write a new config file to the specified config location and exit. If it already exists, back it up." )
     private boolean writeConfig;
 
-    @Option( name = "-f", aliases = { "--config" }, usage = "Configuration file to use (default: $HOME/.koji/buildfinder.conf)" )
+    @Option( name = "-f", aliases = { "--config" },
+             usage = "Configuration file to use (default: $HOME/.koji/buildfinder.conf)" )
     private File configFile;
 
-    @Option( name="-p", aliases={"--skip"}, usage="Skip N prefix directories when parsing paths in the ZIPs")
+    @Option( name = "-p", aliases = { "--skip" }, usage = "Skip N prefix directories when parsing paths in the ZIPs" )
     private int skipParts;
 
     @Argument( multiValued = true, metaVar = "ZIP_FILES", usage = "Zip files to process" )
@@ -53,8 +54,7 @@ public class Options
             throws CmdLineException
     {
         final int cols = ( System.getenv( "COLUMNS" ) == null ? 100 : Integer.valueOf( System.getenv( "COLUMNS" ) ) );
-        final ParserProperties props = ParserProperties.defaults()
-                                                       .withUsageWidth( cols );
+        final ParserProperties props = ParserProperties.defaults().withUsageWidth( cols );
 
         final CmdLineParser parser = new CmdLineParser( this, props );
         boolean canStart = true;
@@ -91,8 +91,10 @@ public class Options
                 config.getParentFile().mkdirs();
             }
 
-            try(InputStream in=Thread.currentThread().getContextClassLoader().getResourceAsStream( DEFAULT_CONFIG_RESOURCE );
-                OutputStream out= new FileOutputStream( config ) )
+            try (InputStream in = Thread.currentThread()
+                                        .getContextClassLoader()
+                                        .getResourceAsStream( DEFAULT_CONFIG_RESOURCE );
+                 OutputStream out = new FileOutputStream( config ))
             {
                 if ( in == null )
                 {
@@ -163,7 +165,7 @@ public class Options
 
     public int getThreads()
     {
-        return threads < 1 ? DEFAULT_THREADS: threads;
+        return threads < 1 ? DEFAULT_THREADS : threads;
     }
 
     public void setThreads( int threads )

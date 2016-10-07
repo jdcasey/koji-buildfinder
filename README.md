@@ -22,6 +22,21 @@ This is a very small utility that iterates through all file entries in one or mo
 
 For your first run, you will probably want to allow buildfinder to write a starter configuration file, via the `-W` command-line option. Then, edit this file to supply URLs and SSL information (remember, relative file paths are interpreted based on the directory containing the configuration file).
 
+### SSL Setup
+
+#### Client PEM
+
+A password is required for your client key pem file. Buildfinder uses Java KeyStores under the covers for SSL, which doesn't support storing keys without a password. If you have an unprotected client PEM file, you can protect it using something like this:
+
+    $ openssl ec -in client-unprotected.pem -out client.pem -des3
+    <enter password>
+
+#### Server PEM
+
+If your Koji installation doesn't use a common certificate authority, you may need to collect the server cert, any intermediate CA's, and its root CA into a single PEM file. This is simply a matter of concatenating all the PEM content for these certificates into the `server.pem` file you use.
+
+### First Execution
+
 After completing configuration, you can run with something like this:
 
     $ java -jar koji-buildfinder-1.0-SNAPSHOT.jar -p 1 /path/to/my-artifacts.zip
