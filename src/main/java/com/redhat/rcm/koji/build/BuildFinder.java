@@ -45,7 +45,7 @@ class BuildFinder
             zf.stream().parallel().filter( ( entry ) -> !entry.isDirectory() ).forEach( ( entry ) -> {
                 String entryName = entry.getName();
 
-                if ( entryName.endsWith( ".md5" ) || entryName.endsWith( ".sha1" ) )
+                if ( entryName.endsWith( ".md5" ) || entryName.endsWith( ".sha1" ) || entryName.endsWith( "maven-metadata.xml" ) )
                 {
                     logger.debug( "Skipping checksum file: {}", entryName );
                 }
