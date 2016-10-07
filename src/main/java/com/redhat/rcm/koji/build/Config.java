@@ -18,12 +18,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
-import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.commonjava.util.jhttpc.model.SiteConfig.DEFAULT_PROXY_PORT;
 import static org.commonjava.util.jhttpc.model.SiteConfig.DEFAULT_REQUEST_TIMEOUT_SECONDS;
 
 /**
- * Created by jdcasey on 10/7/16.
+ * Contains configuration options (plus a method for reading these from a .conf file) pertaining to the Koji client
+ * connection.
  */
 @SectionName( ConfigurationSectionListener.DEFAULT_SECTION )
 public class Config
@@ -71,7 +71,7 @@ public class Config
 
         configDir = configFile.getAbsoluteFile().getParentFile();
 
-        try(InputStream stream = new FileInputStream( configFile ))
+        try (InputStream stream = new FileInputStream( configFile ))
         {
             new DotConfConfigurationReader( this ).loadConfiguration( stream );
         }
@@ -135,7 +135,7 @@ public class Config
             return null;
         }
 
-        String pem =  readFileToString( f );
+        String pem = readFileToString( f );
 
         logger.trace( "Got PEM content:\n\n{}\n\n", pem );
 
