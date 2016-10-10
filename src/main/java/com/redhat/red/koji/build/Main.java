@@ -173,7 +173,11 @@ public class Main
                 try
                 {
                     report();
-                    logger.info( "Results are in: {}", reportFile );
+
+                    if ( reportFile != null )
+                    {
+                        logger.info( "Results are in: {}", reportFile );
+                    }
                 }
                 catch ( IOException e )
                 {

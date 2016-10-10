@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,23 +101,41 @@ class BuildFinder
                                 try
                                 {
                                     List<KojiBuildInfo> builds = client.listBuildsContaining( aref, session );
+
+                                    Collections.sort( builds, ( build1, build2 ) -> build1.getCreationTime()
+                                                                                          .compareTo( build2.getCreationTime() ) );
+
+                                    logger.debug( "Got {} builds from koji. Looking for best match.", builds.size() );
+
                                     if ( builds == null || builds.isEmpty() )
                                     {
-                                        synchronized ( missing )
-                                        {
-                                            missing.add( path );
-                                        }
-
-                                        synchronized ( missingBuilds )
-                                        {
-                                            missingBuilds.add( entryName );
-                                        }
+                                        markMissing( missingBuilds, entryName, path );
                                     }
                                     else
                                     {
-                                        synchronized ( found )
+                                        boolean foundGoodBuild = false;
+                                        for ( KojiBuildInfo build : builds )
                                         {
-                                            found.add( path );
+                                            if ( build.getTaskId() != null )
+                                            {
+                                                logger.debug(
+                                                        "Build: {} is not a real build. It looks like a binary import. Skipping.",
+                                                        build.getNvr() );
+
+                                                foundGoodBuild = true;
+
+                                                synchronized ( found )
+                                                {
+                                                    found.add( path );
+                                                }
+
+                                                break;
+                                            }
+                                        }
+
+                                        if ( !foundGoodBuild )
+                                        {
+                                            markMissing( missingBuilds, entryName, path );
                                         }
                                     }
                                 }
@@ -141,5 +160,18 @@ class BuildFinder
         } );
 
         return missingBuilds;
+    }
+
+    private void markMissing( Set<String> missingBuilds, String entryPath, String trimmedPath )
+    {
+        synchronized ( missing )
+        {
+            missing.add( trimmedPath );
+        }
+
+        synchronized ( missingBuilds )
+        {
+            missingBuilds.add( entryPath );
+        }
     }
 }
